@@ -1,0 +1,28 @@
+public class OpportunityTriggerHandler {
+    /*Use case: We have to stop the opportunity creation if the opportunity associated to the Account doesnot have an active contact.*/
+
+
+    public static void handleBeforeInsert(List<Opportunity> newOpps){
+        Set<Id> accIds = new Set<Id>();
+        Map<Id,Integer> accIdToActiveCons = new Map<Id,Integer>();
+        for(Opportunity opp : newOpps){
+            if(opp.AccountId != null){
+                accIds.add(opp.AccountId);
+            }
+        }
+        system.debug(accIds);
+        List<AggregateResult> activeConsCount = [Select Count(Id) activeCons, AccountId From Contact Where AccountId In :accIds And Active__c = True Group by AccountId];
+        for(AggregateResult ar : activeConsCount){
+            accIdToActiveCons.put((Id)ar.get('AccountId'),(Integer)ar.get('activeCons'));
+        }
+        system.debug(accIdToActiveCons);
+        for(Opportunity opp : newOpps){
+            if(opp.AccountId != null && !accIdToActiveCons.containsKey(opp.AccountId)){
+                    opp.addError('We cannot create an opportunity as it doesnot have any active contact');
+                }
+            }
+        }
+
+
+    /*End of Use case*/
+}
